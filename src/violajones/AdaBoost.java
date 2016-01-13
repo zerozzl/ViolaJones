@@ -32,9 +32,9 @@ public class AdaBoost implements Serializable {
 			System.out.println("training classifer: " + (i + 1) + "/" + T);
 			this.trainWeakClassifier(sc, sparkCores);
 			HaarLikeFeature pickFea = this.pickWeakClassifier();
-			double alpha = 0.5 * Math.log((1.0 - (pickFea.getError() + 0.0001)) / (pickFea.getError() + 0.0001));
+			double alpha = Math.log((1.0 - (pickFea.getError() + 0.0001)) / (pickFea.getError() + 0.0001));
 			model.put(pickFea, alpha);
-			this.updateSamplesWeight(pickFea, alpha);
+			this.updateSamplesWeight(pickFea);
 		}
 		return model;
 	}
@@ -107,22 +107,23 @@ public class AdaBoost implements Serializable {
 	}
 
 	// 更新样本权重
-	public void updateSamplesWeight(HaarLikeFeature pickFea, double alpha) {
+	public void updateSamplesWeight(HaarLikeFeature pickFea) {
+		double beta = (pickFea.getError() + 0.0001) / (1.0 - (pickFea.getError() + 0.0001));
 		double z = 0.0;
 
 		for (IntegralImage data : this.datas) {
 			if (pickFea.getVote(data) == data.getLabel()) {
-				z += data.getWeight() * Math.exp(-1.0 * alpha);
+				z += data.getWeight() * beta;
 			} else {
-				z += data.getWeight() * Math.exp(alpha);
+				z += data.getWeight();
 			}
 		}
 
 		for (IntegralImage data : this.datas) {
 			if (pickFea.getVote(data) == data.getLabel()) {
-				data.setWeight(data.getWeight() * Math.exp(-1.0 * alpha) / z);
+				data.setWeight(data.getWeight() * beta / z);
 			} else {
-				data.setWeight(data.getWeight() * Math.exp(alpha) / z);
+				data.setWeight(data.getWeight() / z);
 			}
 		}
 	}
