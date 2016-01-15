@@ -5,10 +5,6 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -49,56 +45,18 @@ public class DisplayImage extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 
-	public static int[] loadDatas(String fileName, int width, int height) {
-		double[][] img = new double[width][height];
-		File file = new File(fileName);
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new FileReader(file));
-			String tempString = null;
-			boolean firstRow = true;
-			while ((tempString = reader.readLine()) != null) {
-				if (firstRow) {
-					firstRow = false;
-				} else {
-					String[] data = tempString.split(",");
-					int index = 0;
-					for (int i = 0; i < width; i++) {
-						for (int j = 0; j < height; j++) {
-							img[i][j] = Float.parseFloat(data[index++]);
-						}
-					}
-					break;
-				}
-			}
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		int[] drawImg = new int[576];
+	public static void display(IntegralImage iim) {
+		double[][] img = iim.getImage();
+		int[] imgL = new int[img.length * img[0].length];
 		int index = 0;
 		for (int i = 0; i < img.length; i++) {
 			for (int j = 0; j < img[i].length; j++) {
-				drawImg[index++] = new Color((int) img[i][j], (int) img[i][j], (int) img[i][j]).getRGB();
+				imgL[index++] = new Color((int) img[i][j], (int) img[i][j], (int) img[i][j]).getRGB();
 			}
 		}
-
-		return drawImg;
-	}
-
-	public static void main(String[] args) {
-		final int[] drawImg = loadDatas(
-				"E:/TestDatas/MLStudy/FaceDection/MIT/MIT_DATA_DEV.txt", 24, 24);
-
+		
+		final int[] drawImg = imgL;
+		
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {

@@ -16,6 +16,77 @@ import java.util.Map;
 public class FileUtils {
 
 	// 读取AdaBoost训练数据
+	public static List<IntegralImage> loadAdaBoostDatas(String posFile,
+			String negFile, int width, int height) {
+		List<IntegralImage> posImages = loadDatas(posFile, width, height, 1);
+		List<IntegralImage> negImages = loadDatas(negFile, width, height, 0);
+		List<IntegralImage> images = new ArrayList<IntegralImage>();
+		images.addAll(posImages);
+		images.addAll(negImages);
+		return images;
+	}
+
+	// 读取训练数据
+	public static List<IntegralImage> loadDatas(String fileName, int width,
+			int height, int label) {
+		List<IntegralImage> images = new ArrayList<IntegralImage>();
+		File file = new File(fileName);
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new FileReader(file));
+			String tempString = null;
+			while ((tempString = reader.readLine()) != null) {
+				String[] data = tempString.split(",");
+				double[][] img = new double[height][width];
+				int index = 0;
+				for (int i = 0; i < height; i++) {
+					for (int j = 0; j < width; j++) {
+						img[i][j] = Float.parseFloat(data[index++]);
+					}
+				}
+				images.add(new IntegralImage(img, label, 0));
+			}
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		double weight = 1.0 / (2 * images.size());
+		for (IntegralImage iim : images) {
+			iim.setWeight(weight);
+		}
+
+		doMeanAndNormalization(images);
+		return images;
+	}
+
+	public static Map<Integer, List<IntegralImage>> loadCascadeAdaBoostDatas(
+			String fileName, int width, int height) {
+		List<IntegralImage> datas = loadAdaBoostDatas(fileName, width, height);
+		List<IntegralImage> posDatas = new ArrayList<IntegralImage>();
+		List<IntegralImage> negDatas = new ArrayList<IntegralImage>();
+		for (IntegralImage iim : datas) {
+			if (iim.getLabel() == 1) {
+				posDatas.add(iim);
+			} else {
+				negDatas.add(iim);
+			}
+		}
+		Map<Integer, List<IntegralImage>> resultMap = new HashMap<Integer, List<IntegralImage>>();
+		resultMap.put(1, posDatas);
+		resultMap.put(0, negDatas);
+		return resultMap;
+	}
+	
+	// 读取AdaBoost训练数据
 	public static List<IntegralImage> loadAdaBoostDatas(String fileName,
 			int width, int height) {
 		double posWeight = 0, negWeight = 0;
@@ -60,25 +131,6 @@ public class FileUtils {
 		}
 		doMeanAndNormalization(images);
 		return images;
-	}
-
-	// 读取Cascade AdaBoost训练数据
-	public static Map<Integer, List<IntegralImage>> loadCascadeAdaBoostDatas(
-			String fileName, int width, int height) {
-		List<IntegralImage> datas = loadAdaBoostDatas(fileName, width, height);
-		List<IntegralImage> posDatas = new ArrayList<IntegralImage>();
-		List<IntegralImage> negDatas = new ArrayList<IntegralImage>();
-		for (IntegralImage iim : datas) {
-			if (iim.getLabel() == 1) {
-				posDatas.add(iim);
-			} else {
-				negDatas.add(iim);
-			}
-		}
-		Map<Integer, List<IntegralImage>> resultMap = new HashMap<Integer, List<IntegralImage>>();
-		resultMap.put(1, posDatas);
-		resultMap.put(0, negDatas);
-		return resultMap;
 	}
 
 	// 导出模型
