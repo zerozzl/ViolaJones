@@ -37,16 +37,14 @@ public class ViolaJones {
 		List<FeatureTemplate> templates = FeatureTemplate.initFeaTemplates();
 
 		System.out.println("initing features...");
-		List<HaarLikeFeature> features = HaarLikeFeature.initFeatures(imgSize,
-				imgSize, templates);
+		List<HaarLikeFeature> features = HaarLikeFeature.initFeatures(imgSize, imgSize, templates);
 
 		System.out.println("loading train datas...");
-		List<IntegralImage> trainDatas = FileUtils.loadAdaBoostDatas(posFile,
-				negFile, imgSize, imgSize);
+		List<IntegralImage> trainDatas = FileUtils.loadAdaBoostDatas(posFile, negFile, imgSize, imgSize);
 		Collections.shuffle(trainDatas);
 
-		SparkConf sparkConf = new SparkConf().setMaster(sparkMaster)
-				.setAppName(sparkAppName).set("spark.executor.memory", "2g");
+		SparkConf sparkConf = new SparkConf().setMaster(sparkMaster).setAppName(sparkAppName)
+				.set("spark.executor.memory", "2g");
 		JavaSparkContext sc = new JavaSparkContext(sparkConf);
 		sc.addJar(sparkJars);
 		sc.setLogLevel("WARN");
@@ -66,9 +64,9 @@ public class ViolaJones {
 		int imgSize = 24;
 		double eachDR = 0.99, eachFAR = 0.3, finalFAR = 0.0006;
 
-		// String root = "/home/hadoop/ProgramDatas/MLStudy/FaceDection/";
-		String root = "E:/TestDatas/MLStudy/FaceDection/";
-		String dataFile = root + "MIT/MIT_DATA_DEV.txt";
+		String root = "/home/hadoop/ProgramDatas/MLStudy/FaceDection/";
+		// String root = "E:/TestDatas/MLStudy/FaceDection/";
+		String dataFile = root + "MIT/MIT_DATA.txt";
 		// String modelFile = root + "adaboost_model.txt";
 		String sparkAppName = "Viola-Jones Train";
 		String sparkMaster = "spark://localhost:7077";
@@ -81,30 +79,28 @@ public class ViolaJones {
 		List<FeatureTemplate> templates = FeatureTemplate.initFeaTemplates();
 
 		System.out.println("initing features...");
-		List<HaarLikeFeature> features = HaarLikeFeature.initFeatures(imgSize,
-				imgSize, templates);
+		List<HaarLikeFeature> features = HaarLikeFeature.initFeatures(imgSize, imgSize, templates);
 
 		System.out.println("loading train datas...");
-		Map<Integer, List<IntegralImage>> trainDatas = FileUtils
-				.loadCascadeAdaBoostDatas(dataFile, imgSize, imgSize);
+		Map<Integer, List<IntegralImage>> trainDatas = FileUtils.loadCascadeAdaBoostDatas(dataFile, imgSize, imgSize);
 		List<IntegralImage> posDatas = trainDatas.get(1);
 		List<IntegralImage> negDatas = trainDatas.get(0);
 
-		SparkConf sparkConf = new SparkConf().setMaster(sparkMaster)
-				.setAppName(sparkAppName).set("spark.executor.memory", "2g");
-		JavaSparkContext sc = new JavaSparkContext(sparkConf);
-		sc.addJar(sparkJars);
-		sc.setLogLevel("WARN");
-
-		System.out.println("training cascade adaboost...");
-		CascadeAdaBoost cascade = new CascadeAdaBoost(posDatas, negDatas,
-				features);
-		cascade.train(sc, sparkCores, eachDR, eachFAR, finalFAR);
-
-		// System.out.println("exporting model...");
-		// FileUtils.exportModel(modelFile, model);
-
-		sc.close();
+		// SparkConf sparkConf = new SparkConf().setMaster(sparkMaster)
+		// .setAppName(sparkAppName).set("spark.executor.memory", "2g");
+		// JavaSparkContext sc = new JavaSparkContext(sparkConf);
+		// sc.addJar(sparkJars);
+		// sc.setLogLevel("WARN");
+		//
+		// System.out.println("training cascade adaboost...");
+		// CascadeAdaBoost cascade = new CascadeAdaBoost(posDatas, negDatas,
+		// features);
+		// cascade.train(sc, sparkCores, eachDR, eachFAR, finalFAR);
+		//
+		// // System.out.println("exporting model...");
+		// // FileUtils.exportModel(modelFile, model);
+		//
+		// sc.close();
 	}
 
 	public static void main(String[] args) {
@@ -113,8 +109,7 @@ public class ViolaJones {
 		trainCascadeAdaBoost();
 		Date end = new Date();
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		System.out
-				.println("--------------------------------------------------");
+		System.out.println("--------------------------------------------------");
 		System.out.println("程序开始时间: " + df.format(begin));
 		System.out.println("程序开始时间: " + df.format(end));
 	}

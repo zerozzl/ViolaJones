@@ -3,9 +3,7 @@ package violajones;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -30,6 +28,11 @@ public class CascadeAdaBoost implements Serializable {
 		CascadeClassifier classifier = new CascadeClassifier();
 		double curDR = 1.0, curFAR = 1.0;
 		while (curFAR > finalFAR) {
+			datas.clear();
+			datas.addAll(this.posDatas);
+			datas.addAll(this.negDatas);
+			Collections.shuffle(datas);
+			
 			double far = curFAR;
 			AdaClassifier ada = classifier.getNextClassifier();
 			while (far > eachFAR * curFAR) {
@@ -57,11 +60,6 @@ public class CascadeAdaBoost implements Serializable {
 
 	// 训练弱分类器
 	private void trainWeakClassifier(JavaSparkContext sc, int sparkCores) {
-		datas.clear();
-		datas.addAll(this.posDatas);
-		datas.addAll(this.negDatas);
-		Collections.shuffle(datas);
-
 		JavaRDD<HaarLikeFeature> feaRDD = sc.parallelize(this.features, sparkCores);
 		JavaRDD<HaarLikeFeature> feaTrainedRDD = feaRDD.map(new Function<HaarLikeFeature, HaarLikeFeature>() {
 			private static final long serialVersionUID = 1L;

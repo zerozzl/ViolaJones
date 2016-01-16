@@ -162,25 +162,34 @@ public class FileUtils {
 	}
 
 	// 均值归一化
-	private static void doMeanAndNormalization(List<IntegralImage> orig) {
-		if (orig == null || orig.isEmpty()) {
+	private static void doMeanAndNormalization(List<IntegralImage> datas) {
+		if (datas == null || datas.isEmpty()) {
 			return;
 		}
-		for (IntegralImage iim : orig) {
-			double mean = 0;
+		Iterator<IntegralImage> it= datas.iterator();
+		while (it.hasNext()) {
+			IntegralImage iim = it.next();
+			double mean = 0, var = 0;
 			double[][] img = iim.getImage();
 			double size = img.length * img[0].length;
 
 			for (int i = 0; i < img.length; i++) {
 				for (int j = 0; j < img[i].length; j++) {
 					mean += img[i][j];
+					var += img[i][j] * img[i][j];
 				}
 			}
 			mean = mean / size;
-
-			for (int i = 0; i < img.length; i++) {
-				for (int j = 0; j < img[i].length; j++) {
-					img[i][j] = (img[i][j] - mean) / 255;
+			var = Math.sqrt((var / size) - (mean * mean));
+			
+			if(var == 0) {
+				it.remove();
+				continue;
+			} else{
+				for (int i = 0; i < img.length; i++) {
+					for (int j = 0; j < img[i].length; j++) {
+						img[i][j] = (img[i][j] - mean) / var;
+					}
 				}
 			}
 		}
