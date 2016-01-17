@@ -138,6 +138,11 @@ public class HaarLikeFeature implements Serializable {
 		return "type:" + this.type + "|pos:" + this.pos[0] + "," + this.pos[1] + "|w:" + this.w + "|h:" + this.h
 				+ "|theta:" + this.theta + "|p:" + this.p;
 	}
+	
+	public String toStringWithWeight(double weight) {
+		return "type:" + this.type + "|pos:" + this.pos[0] + "," + this.pos[1] + "|w:" + this.w + "|h:" + this.h
+				+ "|theta:" + this.theta + "|p:" + this.p + "|weight:" + weight;
+	}
 
 	// 初始化特征
 	public static List<HaarLikeFeature> initFeatures(int W, int H, List<FeatureTemplate> templates) {

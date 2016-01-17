@@ -15,21 +15,10 @@ import java.util.Map;
 
 public class FileUtils {
 
-	// 读取AdaBoost训练数据
-	public static List<IntegralImage> loadAdaBoostDatas(String posFile,
-			String negFile, int width, int height) {
-		List<IntegralImage> posImages = loadDatas(posFile, width, height, 1);
-		List<IntegralImage> negImages = loadDatas(negFile, width, height, 0);
-		List<IntegralImage> images = new ArrayList<IntegralImage>();
-		images.addAll(posImages);
-		images.addAll(negImages);
-		return images;
-	}
-
-	// 读取训练数据
-	public static List<IntegralImage> loadDatas(String fileName, int width,
-			int height, int label) {
-		List<IntegralImage> images = new ArrayList<IntegralImage>();
+	public static Map<Integer, List<IntegralImage>> loadTrainDatasSeparate(
+			String fileName, int width, int height) {
+		List<IntegralImage> posImages = new ArrayList<IntegralImage>();
+		List<IntegralImage> negImages = new ArrayList<IntegralImage>();
 		File file = new File(fileName);
 		BufferedReader reader = null;
 		try {
@@ -37,14 +26,19 @@ public class FileUtils {
 			String tempString = null;
 			while ((tempString = reader.readLine()) != null) {
 				String[] data = tempString.split(",");
-				double[][] img = new double[height][width];
+				double[][] img = new double[width][height];
 				int index = 0;
-				for (int i = 0; i < height; i++) {
-					for (int j = 0; j < width; j++) {
+				for (int i = 0; i < width; i++) {
+					for (int j = 0; j < height; j++) {
 						img[i][j] = Float.parseFloat(data[index++]);
 					}
 				}
-				images.add(new IntegralImage(img, label, 0));
+				int label = Integer.parseInt(data[index]);
+				if(label == 1) {
+					posImages.add(new IntegralImage(img, label, 0));
+				} else {
+					negImages.add(new IntegralImage(img, label, 0));
+				}
 			}
 			reader.close();
 		} catch (IOException e) {
@@ -58,107 +52,32 @@ public class FileUtils {
 				}
 			}
 		}
-
-		double weight = 1.0 / (2 * images.size());
-		for (IntegralImage iim : images) {
-			iim.setWeight(weight);
+		
+		doMeanAndNormalization(posImages);
+		doMeanAndNormalization(negImages);
+		
+		double posWeight = (double)1 / (2 * posImages.size()), negWeight = (double)1 / (2 * negImages.size());
+		for(IntegralImage iim : posImages) {
+			iim.setWeight(posWeight);
 		}
-
-		doMeanAndNormalization(images);
-		return images;
-	}
-
-	public static Map<Integer, List<IntegralImage>> loadCascadeAdaBoostDatas(
-			String fileName, int width, int height) {
-		List<IntegralImage> datas = loadAdaBoostDatas(fileName, width, height);
-		List<IntegralImage> posDatas = new ArrayList<IntegralImage>();
-		List<IntegralImage> negDatas = new ArrayList<IntegralImage>();
-		for (IntegralImage iim : datas) {
-			if (iim.getLabel() == 1) {
-				posDatas.add(iim);
-			} else {
-				negDatas.add(iim);
-			}
+		for(IntegralImage iim : negImages) {
+			iim.setWeight(negWeight);
 		}
+		
 		Map<Integer, List<IntegralImage>> resultMap = new HashMap<Integer, List<IntegralImage>>();
-		resultMap.put(1, posDatas);
-		resultMap.put(0, negDatas);
+		resultMap.put(1, posImages);
+		resultMap.put(0, negImages);
 		return resultMap;
 	}
-	
-	// 读取AdaBoost训练数据
-	public static List<IntegralImage> loadAdaBoostDatas(String fileName,
-			int width, int height) {
-		double posWeight = 0, negWeight = 0;
-		List<IntegralImage> images = new ArrayList<IntegralImage>();
-		File file = new File(fileName);
-		BufferedReader reader = null;
-		try {
-			reader = new BufferedReader(new FileReader(file));
-			String tempString = null;
-			boolean firstRow = true;
-			while ((tempString = reader.readLine()) != null) {
-				if (firstRow) {
-					String[] num = tempString.split(",");
-					posWeight = 1 / (2 * Float.parseFloat(num[0]));
-					negWeight = 1 / (2 * Float.parseFloat(num[1]));
-					firstRow = false;
-				} else {
-					String[] data = tempString.split(",");
-					double[][] img = new double[width][height];
-					int index = 0;
-					for (int i = 0; i < width; i++) {
-						for (int j = 0; j < height; j++) {
-							img[i][j] = Float.parseFloat(data[index++]);
-						}
-					}
-					int label = Integer.parseInt(data[index]);
-					images.add(new IntegralImage(img, label,
-							label == 1 ? posWeight : negWeight));
-				}
-			}
-			reader.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		doMeanAndNormalization(images);
-		return images;
-	}
 
-	// 导出模型
-	public static void exportModel(String file,
-			Map<HaarLikeFeature, Double> model) {
-		if (model != null && !model.isEmpty()) {
-			BufferedWriter out = null;
-			try {
-				out = new BufferedWriter(new OutputStreamWriter(
-						new FileOutputStream(file)));
-				Iterator<HaarLikeFeature> key = model.keySet().iterator();
-				while (key.hasNext()) {
-					HaarLikeFeature fea = key.next();
-					double weight = model.get(fea);
-					out.write(fea.toString() + "|weight:" + weight + "\n");
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				try {
-					if (out != null) {
-						out.close();
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+	public static List<IntegralImage> loadTrainDatas(String fileName, int width, int height) {
+		List<IntegralImage> images = new ArrayList<IntegralImage>();
+		Map<Integer, List<IntegralImage>> dmap = loadTrainDatasSeparate(fileName, width, height);
+		List<IntegralImage> posDatas = dmap.get(1);
+		List<IntegralImage> negDatas = dmap.get(0);
+		images.addAll(posDatas);
+		images.addAll(negDatas);
+		return images;
 	}
 
 	// 均值归一化
@@ -190,6 +109,30 @@ public class FileUtils {
 					for (int j = 0; j < img[i].length; j++) {
 						img[i][j] = (img[i][j] - mean) / var;
 					}
+				}
+			}
+		}
+	}
+	
+	// 导出模型
+	public static void exportModel(String file, List<String> model) {
+		if (model != null && !model.isEmpty()) {
+			BufferedWriter out = null;
+			try {
+				out = new BufferedWriter(new OutputStreamWriter(
+						new FileOutputStream(file)));
+				for (String line : model) {
+					out.write(line + "\n");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if (out != null) {
+						out.close();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			}
 		}

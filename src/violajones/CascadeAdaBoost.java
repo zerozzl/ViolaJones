@@ -24,29 +24,51 @@ public class CascadeAdaBoost implements Serializable {
 		this.features = features;
 	}
 
-	public void train(JavaSparkContext sc, int sparkCores, double eachDR, double eachFAR, double finalFAR) {
+	public CascadeClassifier train(JavaSparkContext sc, int sparkCores, double eachDR, double eachFAR, double finalFAR) {
 		CascadeClassifier classifier = new CascadeClassifier();
-		double curDR = 1.0, curFAR = 1.0;
+		double curFAR = 1.0;
 		while (curFAR > finalFAR) {
-			datas.clear();
-			datas.addAll(this.posDatas);
-			datas.addAll(this.negDatas);
-			Collections.shuffle(datas);
-			
-			double far = curFAR;
+			this.datas.clear();
+			this.datas.addAll(this.posDatas);
+			this.datas.addAll(this.negDatas);
+			Collections.shuffle(this.datas);
+			System.out.println("Training Layer " + (classifier.getLayerSize() + 1));
+			System.out.println("Training Data size: " + this.datas.size() + "(" + this.posDatas.size() + "/"
+					+ this.negDatas.size() + ")");
+
 			AdaClassifier ada = classifier.getNextClassifier();
-			while (far > eachFAR * curFAR) {
+			while (classifier.getCurrentLayerFAR() > eachFAR) {
 				this.trainStrongClassifier(sc, sparkCores, ada);
-				classifier.computeDRAndFAR(datas);
-				while(classifier.getCurrentDR() < eachDR * curDR) {
+				classifier.computeCurrentLayerDRAndFAR(datas);
+				while (classifier.getCurrentLayerDR() < eachDR) {
 					ada.adjustingThreshold();
-					classifier.computeDRAndFAR(datas);
+					classifier.computeCurrentLayerDRAndFAR(datas);
 				}
-				far = classifier.getCurrentFAR();
+				System.out.println("Layer: " + classifier.getLayerSize()+ ", AdaClassifier size: "
+						+ ada.getClassifierSize() + ", DR: " + classifier.getClassifierDR()
+						+ ", FAR: " + classifier.getClassifierFAR());
 			}
-			curDR = classifier.getCurrentDR();
-			curFAR = classifier.getCurrentFAR();
+			curFAR = classifier.getCurrentLayerFAR() * curFAR;
+
+			System.out.println("Training Layer " + classifier.getLayerSize() + " success, DR: "
+					+ classifier.getClassifierDR() + ", FAR: " + classifier.getClassifierFAR() + "/" + curFAR);
+
+			this.posDatas.clear();
+			this.negDatas.clear();
+			for (IntegralImage iim : this.datas) {
+				if (iim.getLabel() == 0) {
+					if (classifier.predict(iim) == 1) {
+						this.negDatas.add(iim);
+					}
+				}
+				if (iim.getLabel() == 1) {
+					if (classifier.predict(iim) == 1) {
+						this.posDatas.add(iim);
+					}
+				}
+			}
 		}
+		return classifier;
 	}
 
 	// 训练强分类器
