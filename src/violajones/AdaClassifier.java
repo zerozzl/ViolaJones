@@ -29,7 +29,10 @@ public class AdaClassifier {
 	}
 
 	public void adjustingThreshold() {
-		this.theta -= 0.5;
+		this.theta -= 0.01;
+		if(this.theta < 0) {
+			this.theta = 0;
+		}
 	}
 	
 	public int predict(IntegralImage iim) {
@@ -37,7 +40,7 @@ public class AdaClassifier {
 		for (Entry<HaarLikeFeature, Double> item : classifiers.entrySet()) {
 			score += item.getKey().getVote(iim) * item.getValue();
 		}
-		if (score > theta) {
+		if (score >= theta) {
 			return 1;
 		} else {
 			return 0;

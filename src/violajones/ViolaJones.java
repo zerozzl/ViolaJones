@@ -66,12 +66,12 @@ public class ViolaJones {
 
 		String root = "/home/hadoop/ProgramDatas/MLStudy/FaceDection/";
 		// String root = "E:/TestDatas/MLStudy/FaceDection/";
-		String dataFile = root + "MIT/MIT_DATA.txt";
+		String dataFile = root + "MIT/MIT_DATA_DEV.txt";
 		// String modelFile = root + "adaboost_model.txt";
 		String sparkAppName = "Viola-Jones Train";
 		String sparkMaster = "spark://localhost:7077";
 		int sparkCores = 60;
-		String sparkJars = "/home/hadoop/violajones/violajones.jar";
+		String sparkJars = "/home/hadoop/violajones.jar";
 
 		checkMemoryInfo();
 
@@ -86,21 +86,20 @@ public class ViolaJones {
 		List<IntegralImage> posDatas = trainDatas.get(1);
 		List<IntegralImage> negDatas = trainDatas.get(0);
 
-		// SparkConf sparkConf = new SparkConf().setMaster(sparkMaster)
-		// .setAppName(sparkAppName).set("spark.executor.memory", "2g");
-		// JavaSparkContext sc = new JavaSparkContext(sparkConf);
-		// sc.addJar(sparkJars);
-		// sc.setLogLevel("WARN");
-		//
-		// System.out.println("training cascade adaboost...");
-		// CascadeAdaBoost cascade = new CascadeAdaBoost(posDatas, negDatas,
-		// features);
-		// cascade.train(sc, sparkCores, eachDR, eachFAR, finalFAR);
-		//
-		// // System.out.println("exporting model...");
-		// // FileUtils.exportModel(modelFile, model);
-		//
-		// sc.close();
+		SparkConf sparkConf = new SparkConf().setMaster(sparkMaster).setAppName(sparkAppName)
+				.set("spark.executor.memory", "2g");
+		JavaSparkContext sc = new JavaSparkContext(sparkConf);
+		sc.addJar(sparkJars);
+		sc.setLogLevel("WARN");
+
+		System.out.println("training cascade adaboost...");
+		CascadeAdaBoost cascade = new CascadeAdaBoost(posDatas, negDatas, features);
+		cascade.train(sc, sparkCores, eachDR, eachFAR, finalFAR);
+
+		// System.out.println("exporting model...");
+		// FileUtils.exportModel(modelFile, model);
+
+		sc.close();
 	}
 
 	public static void main(String[] args) {
