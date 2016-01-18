@@ -8,13 +8,15 @@ import java.io.Serializable;
 public class IntegralImage implements Serializable {
 
 	private static final long serialVersionUID = 6671192731069159415L;
+	private int id;
 	private double[][] image; // 原图像
 	private double[][] sat; // 举行特征积分图
 	private double[][] rsat; // 倾斜特征积分图
 	private int label; // 图像类别（是否人脸）
 	private double weight; // 图像权重
 
-	public IntegralImage(double[][] im, int l, double w) {
+	public IntegralImage(int id, double[][] im, int l, double w) {
+		this.id = id;
 		this.image = im;
 		this.label = l;
 		this.weight = w;
@@ -52,6 +54,10 @@ public class IntegralImage implements Serializable {
 		return sum;
 	}
 
+	public int getId() {
+		return id;
+	}
+	
 	public double[][] getImage() {
 		return image;
 	}
@@ -68,6 +74,7 @@ public class IntegralImage implements Serializable {
 		this.weight = weight;
 	}
 
+	
 	// public static void main(String[] args) {
 	// float[][] image = new float[7][7];
 	// for(int i = 0; i < 7; i++) {

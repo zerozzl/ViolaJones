@@ -24,7 +24,8 @@ public class CascadeAdaBoost implements Serializable {
 		this.features = features;
 	}
 
-	public CascadeClassifier train(JavaSparkContext sc, int sparkCores, double eachDR, double eachFAR, double finalFAR) {
+	public CascadeClassifier train(JavaSparkContext sc, int sparkCores,
+			double eachDR, double eachFAR, double finalFAR, String misClassFile) {
 		CascadeClassifier classifier = new CascadeClassifier();
 		double curFAR = 1.0;
 		while (curFAR > finalFAR) {
@@ -37,7 +38,8 @@ public class CascadeAdaBoost implements Serializable {
 					+ this.negDatas.size() + ")");
 
 			AdaClassifier ada = classifier.getNextClassifier();
-			while (classifier.getCurrentLayerFAR() > eachFAR) {
+			while (classifier.getCurrentLayerFAR() > eachFAR
+					&& classifier.getClassifierFAR() > finalFAR) {
 				this.trainStrongClassifier(sc, sparkCores, ada);
 				classifier.computeCurrentLayerDRAndFAR(datas);
 				while (classifier.getCurrentLayerDR() < eachDR) {
@@ -47,6 +49,7 @@ public class CascadeAdaBoost implements Serializable {
 				System.out.println("Layer: " + classifier.getLayerSize()+ ", AdaClassifier size: "
 						+ ada.getClassifierSize() + ", DR: " + classifier.getClassifierDR()
 						+ ", FAR: " + classifier.getClassifierFAR());
+				exportMisClassificationDatas(misClassFile, classifier, datas);
 			}
 			curFAR = classifier.getCurrentLayerFAR() * curFAR;
 
@@ -149,7 +152,7 @@ public class CascadeAdaBoost implements Serializable {
 	}
 
 	// 更新样本权重
-	public void updateImagesWeight(HaarLikeFeature pickFea) {
+	private void updateImagesWeight(HaarLikeFeature pickFea) {
 		double beta = (pickFea.getError() + 0.0001) / (1.0 - (pickFea.getError() + 0.0001));
 		double z = 0.0;
 
@@ -168,6 +171,18 @@ public class CascadeAdaBoost implements Serializable {
 				data.setWeight(data.getWeight() / z);
 			}
 		}
+	}
+	
+	// 导出误分类样本
+	private void exportMisClassificationDatas(String misClassFile,
+			CascadeClassifier classifier, List<IntegralImage> datas) {
+		List<String> misClassDatas = new ArrayList<String>();
+		for(IntegralImage iim : datas) {
+			if(classifier.predict(iim) != iim.getLabel()) {
+				misClassDatas.add(String.valueOf(iim.getId()));
+			}
+		}
+		FileUtils.exportFile(misClassFile, misClassDatas);
 	}
 
 }

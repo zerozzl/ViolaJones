@@ -59,7 +59,7 @@ public class ViolaJones {
 		for (Entry<HaarLikeFeature, Double> item : classifiers.entrySet()) {
 			model.add(item.getKey().toStringWithWeight(item.getValue()));
 		}
-		FileUtils.exportModel(modelFile, model);
+		FileUtils.exportFile(modelFile, model);
 
 		System.out.println("viola jones training success!");
 		sc.close();
@@ -67,12 +67,13 @@ public class ViolaJones {
 
 	private static void trainCascadeAdaBoost() {
 		int imgSize = 24;
-		double eachDR = 0.99, eachFAR = 0.4, finalFAR = 0.0005;
+		double eachDR = 0.99, eachFAR = 0.5, finalFAR = 0.01;
 
 		String root = "/home/hadoop/ProgramDatas/MLStudy/FaceDection/";
 		// String root = "E:/TestDatas/MLStudy/FaceDection/";
 		String dataFile = root + "train_data.txt";
 		String modelFile = root + "CascadeAdaboost_model.txt";
+		String misclassificationFile = root + "mis_classifications.txt";
 		String sparkAppName = "Viola-Jones Train";
 		String sparkMaster = "spark://localhost:7077";
 		int sparkCores = 60;
@@ -99,10 +100,11 @@ public class ViolaJones {
 
 		System.out.println("training cascade adaboost...");
 		CascadeAdaBoost cascade = new CascadeAdaBoost(posDatas, negDatas, features);
-		CascadeClassifier classifier = cascade.train(sc, sparkCores, eachDR, eachFAR, finalFAR);
+		CascadeClassifier classifier = cascade.train(sc, sparkCores,
+				eachDR, eachFAR, finalFAR, misclassificationFile);
 
 		System.out.println("exporting model...");
-		FileUtils.exportModel(modelFile, classifier.exportModel());
+		FileUtils.exportFile(modelFile, classifier.exportModel());
 
 		sc.close();
 	}

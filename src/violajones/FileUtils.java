@@ -23,6 +23,7 @@ public class FileUtils {
 		BufferedReader reader = null;
 		try {
 			reader = new BufferedReader(new FileReader(file));
+			int line = 0;
 			String tempString = null;
 			while ((tempString = reader.readLine()) != null) {
 				String[] data = tempString.split(",");
@@ -34,10 +35,10 @@ public class FileUtils {
 					}
 				}
 				int label = Integer.parseInt(data[index]);
-				if(label == 1) {
-					posImages.add(new IntegralImage(img, label, 0));
+				if (label == 1) {
+					posImages.add(new IntegralImage(line++, img, label, 0));
 				} else {
-					negImages.add(new IntegralImage(img, label, 0));
+					negImages.add(new IntegralImage(line++, img, label, 0));
 				}
 			}
 			reader.close();
@@ -52,27 +53,30 @@ public class FileUtils {
 				}
 			}
 		}
-		
+
 		doMeanAndNormalization(posImages);
 		doMeanAndNormalization(negImages);
-		
-		double posWeight = (double)1 / (2 * posImages.size()), negWeight = (double)1 / (2 * negImages.size());
-		for(IntegralImage iim : posImages) {
+
+		double posWeight = (double) 1 / (2 * posImages.size()), negWeight = (double) 1
+				/ (2 * negImages.size());
+		for (IntegralImage iim : posImages) {
 			iim.setWeight(posWeight);
 		}
-		for(IntegralImage iim : negImages) {
+		for (IntegralImage iim : negImages) {
 			iim.setWeight(negWeight);
 		}
-		
+
 		Map<Integer, List<IntegralImage>> resultMap = new HashMap<Integer, List<IntegralImage>>();
 		resultMap.put(1, posImages);
 		resultMap.put(0, negImages);
 		return resultMap;
 	}
 
-	public static List<IntegralImage> loadTrainDatas(String fileName, int width, int height) {
+	public static List<IntegralImage> loadTrainDatas(String fileName,
+			int width, int height) {
 		List<IntegralImage> images = new ArrayList<IntegralImage>();
-		Map<Integer, List<IntegralImage>> dmap = loadTrainDatasSeparate(fileName, width, height);
+		Map<Integer, List<IntegralImage>> dmap = loadTrainDatasSeparate(
+				fileName, width, height);
 		List<IntegralImage> posDatas = dmap.get(1);
 		List<IntegralImage> negDatas = dmap.get(0);
 		images.addAll(posDatas);
@@ -85,7 +89,7 @@ public class FileUtils {
 		if (datas == null || datas.isEmpty()) {
 			return;
 		}
-		Iterator<IntegralImage> it= datas.iterator();
+		Iterator<IntegralImage> it = datas.iterator();
 		while (it.hasNext()) {
 			IntegralImage iim = it.next();
 			double mean = 0, var = 0;
@@ -100,11 +104,11 @@ public class FileUtils {
 			}
 			mean = mean / size;
 			var = Math.sqrt((var / size) - (mean * mean));
-			
-			if(var == 0) {
+
+			if (var == 0) {
 				it.remove();
 				continue;
-			} else{
+			} else {
 				for (int i = 0; i < img.length; i++) {
 					for (int j = 0; j < img[i].length; j++) {
 						img[i][j] = (img[i][j] - mean) / var;
@@ -113,27 +117,27 @@ public class FileUtils {
 			}
 		}
 	}
-	
+
 	// 导出模型
-	public static void exportModel(String file, List<String> model) {
-		if (model != null && !model.isEmpty()) {
-			BufferedWriter out = null;
-			try {
-				out = new BufferedWriter(new OutputStreamWriter(
-						new FileOutputStream(file)));
-				for (String line : model) {
+	public static void exportFile(String file, List<String> contents) {
+		BufferedWriter out = null;
+		try {
+			out = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream(file)));
+			if (contents != null && !contents.isEmpty()) {
+				for (String line : contents) {
 					out.write(line + "\n");
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				try {
-					if (out != null) {
-						out.close();
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (out != null) {
+					out.close();
 				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}
