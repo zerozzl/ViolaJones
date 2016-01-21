@@ -66,12 +66,12 @@ public class ViolaJones {
 	}
 
 	private static void trainCascadeAdaBoost() {
-		int imgSize = 24;
-		double eachDR = 0.99, eachFAR = 0.5, finalFAR = 0.01;
+		int imgSize = 30;
+		double eachDR = 0.99, eachFAR = 0.5, finalFAR = 0;
 
 		String root = "/home/hadoop/ProgramDatas/MLStudy/FaceDection/";
 		// String root = "E:/TestDatas/MLStudy/FaceDection/";
-		String dataFile = root + "train_data.txt";
+		String dataFile = root + "train_data_2.txt";
 		String modelFile = root + "CascadeAdaboost_model.txt";
 		String misclassificationFile = root + "mis_classifications.txt";
 		String sparkAppName = "Viola-Jones Train";
@@ -93,7 +93,7 @@ public class ViolaJones {
 		List<IntegralImage> negDatas = trainDatas.get(0);
 		
 		SparkConf sparkConf = new SparkConf().setMaster(sparkMaster).setAppName(sparkAppName)
-				.set("spark.executor.memory", "2g");
+				.set("spark.executor.memory", "3g");
 		JavaSparkContext sc = new JavaSparkContext(sparkConf);
 		sc.addJar(sparkJars);
 		sc.setLogLevel("WARN");
@@ -101,7 +101,7 @@ public class ViolaJones {
 		System.out.println("training cascade adaboost...");
 		CascadeAdaBoost cascade = new CascadeAdaBoost(posDatas, negDatas, features);
 		CascadeClassifier classifier = cascade.train(sc, sparkCores,
-				eachDR, eachFAR, finalFAR, misclassificationFile);
+				eachDR, eachFAR, finalFAR, modelFile, misclassificationFile);
 
 		System.out.println("exporting model...");
 		FileUtils.exportFile(modelFile, classifier.exportModel());

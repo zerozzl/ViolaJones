@@ -17,7 +17,8 @@ public class CascadeAdaBoost implements Serializable {
 	private List<IntegralImage> datas;
 	private List<HaarLikeFeature> features;
 
-	public CascadeAdaBoost(List<IntegralImage> posDatas, List<IntegralImage> negDatas, List<HaarLikeFeature> features) {
+	public CascadeAdaBoost(List<IntegralImage> posDatas,
+			List<IntegralImage> negDatas, List<HaarLikeFeature> features) {
 		this.posDatas = posDatas;
 		this.negDatas = negDatas;
 		this.datas = new ArrayList<IntegralImage>();
@@ -25,7 +26,8 @@ public class CascadeAdaBoost implements Serializable {
 	}
 
 	public CascadeClassifier train(JavaSparkContext sc, int sparkCores,
-			double eachDR, double eachFAR, double finalFAR, String misClassFile) {
+			double eachDR, double eachFAR, double finalFAR, String modelFile,
+			String misClassFile) {
 		CascadeClassifier classifier = new CascadeClassifier();
 		double curFAR = 1.0;
 		while (curFAR > finalFAR) {
@@ -33,9 +35,10 @@ public class CascadeAdaBoost implements Serializable {
 			this.datas.addAll(this.posDatas);
 			this.datas.addAll(this.negDatas);
 			Collections.shuffle(this.datas);
-			System.out.println("Training Layer " + (classifier.getLayerSize() + 1));
-			System.out.println("Training Data size: " + this.datas.size() + "(" + this.posDatas.size() + "/"
-					+ this.negDatas.size() + ")");
+			System.out.println("Training Layer "
+					+ (classifier.getLayerSize() + 1));
+			System.out.println("Training Data size: " + this.datas.size() + "("
+					+ this.posDatas.size() + "/" + this.negDatas.size() + ")");
 
 			AdaClassifier ada = classifier.getNextClassifier();
 			while (classifier.getCurrentLayerFAR() > eachFAR
@@ -46,15 +49,18 @@ public class CascadeAdaBoost implements Serializable {
 					ada.adjustingThreshold();
 					classifier.computeCurrentLayerDRAndFAR(datas);
 				}
-				System.out.println("Layer: " + classifier.getLayerSize()+ ", AdaClassifier size: "
-						+ ada.getClassifierSize() + ", DR: " + classifier.getClassifierDR()
-						+ ", FAR: " + classifier.getClassifierFAR());
+				System.out.println("Layer: " + classifier.getLayerSize()
+						+ ", AdaClassifier size: " + ada.getClassifierSize()
+						+ ", DR: " + classifier.getClassifierDR() + ", FAR: "
+						+ classifier.getClassifierFAR());
+				FileUtils.exportFile(modelFile, classifier.exportModel());
 				exportMisClassificationDatas(misClassFile, classifier, datas);
 			}
 			curFAR = classifier.getCurrentLayerFAR() * curFAR;
 
-			System.out.println("Training Layer " + classifier.getLayerSize() + " success, DR: "
-					+ classifier.getClassifierDR() + ", FAR: " + classifier.getClassifierFAR() + "/" + curFAR);
+			System.out.println("Training Layer " + classifier.getLayerSize()
+					+ " success, DR: " + classifier.getClassifierDR()
+					+ ", FAR: " + classifier.getClassifierFAR() + "/" + curFAR);
 
 			this.posDatas.clear();
 			this.negDatas.clear();
@@ -75,62 +81,69 @@ public class CascadeAdaBoost implements Serializable {
 	}
 
 	// 训练强分类器
-	private void trainStrongClassifier(JavaSparkContext sc, int sparkCores, AdaClassifier ada) {
+	private void trainStrongClassifier(JavaSparkContext sc, int sparkCores,
+			AdaClassifier ada) {
 		this.trainWeakClassifier(sc, sparkCores);
 		HaarLikeFeature pickFea = this.pickWeakClassifier();
-		double alpha = Math.log((1.0 - (pickFea.getError() + 0.0001)) / (pickFea.getError() + 0.0001));
+		double alpha = Math.log((1.0 - (pickFea.getError() + 0.0001))
+				/ (pickFea.getError() + 0.0001));
 		ada.addFeature(pickFea, alpha);
 		this.updateImagesWeight(pickFea);
 	}
 
 	// 训练弱分类器
 	private void trainWeakClassifier(JavaSparkContext sc, int sparkCores) {
-		JavaRDD<HaarLikeFeature> feaRDD = sc.parallelize(this.features, sparkCores);
-		JavaRDD<HaarLikeFeature> feaTrainedRDD = feaRDD.map(new Function<HaarLikeFeature, HaarLikeFeature>() {
-			private static final long serialVersionUID = 1L;
+		JavaRDD<HaarLikeFeature> feaRDD = sc.parallelize(this.features,
+				sparkCores);
+		JavaRDD<HaarLikeFeature> feaTrainedRDD = feaRDD
+				.map(new Function<HaarLikeFeature, HaarLikeFeature>() {
+					private static final long serialVersionUID = 1L;
 
-			@Override
-			public HaarLikeFeature call(HaarLikeFeature fea) throws Exception {
-				float wpos = 0, wneg = 0;
-				List<IntegralImageScore> scores = new ArrayList<IntegralImageScore>();
-				for (int i = 0; i < datas.size(); i++) {
-					scores.add(new IntegralImageScore(datas.get(i).getLabel(), datas.get(i).getWeight(),
-							fea.getEigenvalue(datas.get(i))));
-					if (datas.get(i).getLabel() == 1) {
-						wpos += datas.get(i).getWeight();
-					} else {
-						wneg += datas.get(i).getWeight();
-					}
-				}
-				Collections.sort(scores);
-
-				float spos = 0, sneg = 0;
-				double bestSplit = 0, bestErr = 1;
-				int polarity = 1;
-
-				for (IntegralImageScore iims : scores) {
-					float err = Math.min((spos + wneg - sneg), (sneg + wpos - spos));
-					if (err < bestErr) {
-						bestErr = err;
-						bestSplit = iims.getScore();
-						if ((spos + wneg - sneg) < (sneg + wpos - spos)) {
-							polarity = -1;
-						} else {
-							polarity = 1;
+					@Override
+					public HaarLikeFeature call(HaarLikeFeature fea)
+							throws Exception {
+						float wpos = 0, wneg = 0;
+						List<IntegralImageScore> scores = new ArrayList<IntegralImageScore>();
+						for (int i = 0; i < datas.size(); i++) {
+							scores.add(new IntegralImageScore(datas.get(i)
+									.getLabel(), datas.get(i).getWeight(), fea
+									.getEigenvalue(datas.get(i))));
+							if (datas.get(i).getLabel() == 1) {
+								wpos += datas.get(i).getWeight();
+							} else {
+								wneg += datas.get(i).getWeight();
+							}
 						}
-					}
+						Collections.sort(scores);
 
-					if (iims.getLabel() == 1) {
-						spos += iims.getWeight();
-					} else {
-						sneg += iims.getWeight();
-					}
-				}
+						float spos = 0, sneg = 0;
+						double bestSplit = 0, bestErr = 1;
+						int polarity = 1;
 
-				fea.updateInfo(bestSplit, bestErr, polarity);
-				return fea;
-			}
-		});
+						for (IntegralImageScore iims : scores) {
+							float err = Math.min((spos + wneg - sneg), (sneg
+									+ wpos - spos));
+							if (err < bestErr) {
+								bestErr = err;
+								bestSplit = iims.getScore();
+								if ((spos + wneg - sneg) < (sneg + wpos - spos)) {
+									polarity = -1;
+								} else {
+									polarity = 1;
+								}
+							}
+
+							if (iims.getLabel() == 1) {
+								spos += iims.getWeight();
+							} else {
+								sneg += iims.getWeight();
+							}
+						}
+
+						fea.updateInfo(bestSplit, bestErr, polarity);
+						return fea;
+					}
+				});
 		this.features = new ArrayList<HaarLikeFeature>(feaTrainedRDD.collect());
 	}
 
@@ -153,7 +166,8 @@ public class CascadeAdaBoost implements Serializable {
 
 	// 更新样本权重
 	private void updateImagesWeight(HaarLikeFeature pickFea) {
-		double beta = (pickFea.getError() + 0.0001) / (1.0 - (pickFea.getError() + 0.0001));
+		double beta = (pickFea.getError() + 0.0001)
+				/ (1.0 - (pickFea.getError() + 0.0001));
 		double z = 0.0;
 
 		for (IntegralImage data : this.datas) {
@@ -172,13 +186,13 @@ public class CascadeAdaBoost implements Serializable {
 			}
 		}
 	}
-	
+
 	// 导出误分类样本
 	private void exportMisClassificationDatas(String misClassFile,
 			CascadeClassifier classifier, List<IntegralImage> datas) {
 		List<String> misClassDatas = new ArrayList<String>();
-		for(IntegralImage iim : datas) {
-			if(classifier.predict(iim) != iim.getLabel()) {
+		for (IntegralImage iim : datas) {
+			if (classifier.predict(iim) != iim.getLabel()) {
 				misClassDatas.add(String.valueOf(iim.getId()));
 			}
 		}

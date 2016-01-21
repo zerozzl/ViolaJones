@@ -187,28 +187,4 @@ public class HaarLikeFeature implements Serializable {
 		return features;
 	}
 	
-//	public static void main(String[] args) {
-//		float[][] image = new float[7][7];
-//		for (int i = 0; i < 7; i++) {
-//			for (int j = 0; j < 7; j++) {
-//				image[i][j] = i * 7 + j + 1;
-//			}
-//		}
-//
-//		IntegralImage im = new IntegralImage(image, 1, 0);
-//		for (int i = 0; i < im.getImage().length; i++) {
-//			for (int j = 0; j < im.getImage()[i].length; j++) {
-//				System.out.print(im.getImage()[i][j] + " ");
-//			}
-//			System.out.println();
-//		}
-//
-//		int[] pos = new int[2];
-//		pos[0] = 0;
-//		pos[1] = 0;
-//
-//		HaarLikeFeature fea = new HaarLikeFeature(0, "1a", pos, 6, 1);
-//		System.out.println(fea.getEigenvalue(im));
-//	}
-
 }

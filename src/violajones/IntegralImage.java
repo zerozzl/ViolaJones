@@ -73,40 +73,5 @@ public class IntegralImage implements Serializable {
 	public void setWeight(double weight) {
 		this.weight = weight;
 	}
-
 	
-	// public static void main(String[] args) {
-	// float[][] image = new float[7][7];
-	// for(int i = 0; i < 7; i++) {
-	// for(int j = 0; j < 7; j++) {
-	// image[i][j] = i * 7 + j + 1;
-	// }
-	// }
-	//
-	// IntegralImage im = new IntegralImage(image, 1, 0);
-	//
-	// for(int i = 0; i<im.image.length; i++) {
-	// for(int j = 0; j<im.image[i].length; j++) {
-	// System.out.print(im.image[i][j] + " ");
-	// }
-	// System.out.println();
-	// }
-	//
-	// for(int i = 0; i<im.sat.length; i++) {
-	// for(int j = 0; j<im.sat[i].length; j++) {
-	// System.out.print(im.sat[i][j] + " ");
-	// }
-	// System.out.println();
-	// }
-	//
-	// for(int i = 0; i<im.rsat.length; i++) {
-	// for(int j = 0; j<im.rsat[i].length; j++) {
-	// System.out.print(im.rsat[i][j] + " ");
-	// }
-	// System.out.println();
-	// }
-	//
-	// System.out.println(im.getAreaSum(2, 1, 2, 2, 45));
-	// }
-
 }
